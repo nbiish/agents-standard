@@ -186,6 +186,12 @@ Every agent's config file and its location:
 
 Both use the `.agents/` directory. They complement each other.
 
+## Contribute
+
+- **[Open an issue](https://github.com/nbiish/agentsstandard-dot-com/issues/new)** to add a new agent, update config paths, or propose spec changes
+- **[Spec repo](https://github.com/nbiish/agents-standard)** — the standard itself
+- **[Site repo](https://github.com/nbiish/agentsstandard-dot-com)** — the website, issue tracker, contribution hub
+
 ## Adopt
 
 For agent tool developers — four steps:
