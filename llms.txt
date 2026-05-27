@@ -1,19 +1,29 @@
 # agents-standard
 
 > Specification for the AGENTS.md hierarchical configuration standard.
-> One file convention, three scopes, all agents.
+> One file convention, five-tier loading, all agents.
+> Note: This project spans two repositories: the specification/CLI repository (nbiish/agents-standard) and the website/documentation repository (nbiish/agentsstandard-dot-com). We actively work on both repositories to maintain consistency between the online docs and the core specifications/CLI tools.
 
 ## Version
 
-1.1.0
+1.4.0
+
+## The Standard
+
+The standard unifies project instructions by separating **what/why** (Project PRD) from **how** (Behavioral Rules):
+
+* **`llms.txt` (Project PRD)**: Located at `{project_root}/llms.txt`. Defines active goals, roadmap, and scope.
+* **`AGENTS.md` (Behavioral Cascade)**: Cascades across four scopes (`Global Base`, `Project Base`, `Project Active`, `Folder`). Defines safety, coding preferences, and guidelines.
 
 ## Resolution Order
 
-1. `~/.agents/AGENTS.md` — Global user rules (loaded first)
-2. `.agents/AGENTS.md` at repo root — Project rules (committed)
-3. `.agents/AGENTS.md` in cwd — Folder-specific rules
+1. Load `~/.agents/AGENTS.md` (global base — loaded first, user safety/preferences)
+2. Load `{project_root}/llms.txt` (project PRD — loaded second, functional requirements)
+3. Load `{project_root}/.agents/AGENTS.md` (project base rules — loaded third, committed guidelines)
+4. Load `{project_root}/AGENTS.md` (project active rules — loaded fourth, active constraints, symlinked)
+5. Load `{cwd}/AGENTS.md` if cwd is within project boundary (folder-specific rules — loaded last, component overrides)
 
-Most specific scope wins (folder > project > global). Each layer extends, not replaces.
+Most specific rules win (folder > active > project base > global). Each layer extends, not replaces.
 
 ## Agent Coverage
 
@@ -33,10 +43,18 @@ All other agents can symlink ~/.agents/AGENTS.md into their config location.
 ## Standard Directory Layout
 
 ```
+# Global ~/.agents/ (behavior + tooling)
 ~/.agents/
-├── AGENTS.md              ← Behavior rules (this standard)
-├── mcp-settings.json      ← MCP server configs (universal, planned)
+├── AGENTS.md              ← Behavior rules (global base, loaded first)
+├── mcp-settings.json      ← MCP server configs (universal)
 └── skills/                ← Agent Skills
+    └── **/SKILL.md
+
+# Project .agents/ (tooling + project base rules)
+{project}/.agents/
+├── AGENTS.md              ← Project base rules (committed rules for tech stack, deployment)
+├── mcp-settings.json      ← Project-specific MCP servers
+└── skills/                ← Project-specific agent skills
     └── **/SKILL.md
 ```
 

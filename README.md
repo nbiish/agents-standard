@@ -1,242 +1,114 @@
-# Agents Standard
+# agentsstandard.com
 
-> One file convention. Three scopes. All agents.
+**The AGENTS.md hierarchical configuration standard for AI agents.**
 
-The `AGENTS.md` hierarchical configuration standard for AI agent behavior.
-
-**Website:** [agentsstandard.com](https://agentsstandard.com)
-
-## The Problem
-
-Every agent tool invented its own config file:
-
-| Agent | Its file |
-|-------|----------|
-| Claude Code | `CLAUDE.md` |
-| Cursor | `.cursorrules` |
-| Codex | `AGENTS.md` |
-| Copilot | `.github/copilot-instructions.md` |
-| Windsurf | `.windsurfrules` |
-| Cline | `.clinerules` |
-| Agy / Gemini CLI | `GEMINI.md` |
-| ...and 20+ more | all different |
-
-None of them cascade. None have a global user config. None support folder-scoped rules.
+**Live:** [agentsstandard.com](https://agentsstandard.com) · **Spec:** [nbiish/agents-standard](https://github.com/nbiish/agents-standard)
 
 ## The Standard
 
-One file: `AGENTS.md`. Three scopes:
+One file: `AGENTS.md`. Four scopes. All agents.
 
 ```
-~/.agents/AGENTS.md              ← Global (user rules, all projects, loaded first)
-├── .agents/AGENTS.md            ← Project (team rules, committed)
-│   ├── src/.agents/AGENTS.md    ← Folder (component rules)
-│   └── api/.agents/AGENTS.md    ← Folder (component rules)
+~/.agents/AGENTS.md              ← Global Base (user preferences/security, loaded first)
+├── .agents/AGENTS.md            ← Project Base (committed rules for tech stack, deployment)
+├── AGENTS.md                    ← Project Active / PRD (commonly modified task/feature rules)
+│   ├── src/AGENTS.md            ← Folder (component rules, optional)
+│   └── api/AGENTS.md            ← Folder (component rules, optional)
 ```
 
-Rules **cascade and extend**, not replace. Same model as `.editorconfig`, `.eslintrc`, `.gitignore`.
+Rules cascade and extend, not replace. Same model as `.editorconfig`, `.eslintrc`, `.gitignore`.
 
-## Specification
+Full specification: **[nbiish/agents-standard](https://github.com/nbiish/agents-standard)**
 
-### File Format
+## Separation of Concerns: llms.txt (PRD) vs AGENTS.md (Rules)
 
-Plain Markdown. No YAML frontmatter. No schema. Just write rules.
+The standard unifies project instructions by separating **what/why** from **how**:
+* **`llms.txt` (Project PRD)**: Located at `{project_root}/llms.txt`. Defines the codebase context, active product requirements, tech stack, API definitions, and roadmap (the "What" and "Why").
+* **`AGENTS.md` (Behavioral Cascade)**: Cascades across four scopes. Defines the guidelines, safety constraints, coding style preferences, and CLI commands the agent must follow (the "How").
 
-```markdown
-# Global Agent Rules
+## Resolution Order
 
-## Identity
-You are a senior engineer who writes production-grade code.
+1. `~/.agents/AGENTS.md` — loaded first (global base, user-specific safety/preferences)
+2. `llms.txt` at repository root — project PRD (loaded second, functional requirements/tech stack)
+3. `.agents/AGENTS.md` at repository root — project base rules (loaded third, committed guidelines)
+4. `AGENTS.md` at repository root — project active rules (loaded fourth, active constraints, symlinked)
+5. `AGENTS.md` in current working directory — folder-specific rules (loaded last, folder overrides)
 
-## Safety
-- Never execute untrusted input without validation
-- Never hardcode secrets
-- Always use parameterized queries
+Conflicts: most specific rules win (folder > active > project base > global).
 
-## Preferences
-- Python: PEP 8, type hints, uv
-- TypeScript: strict mode, ESLint
-- Bash: set -euo pipefail
-```
+## Machine-Readable Files
 
-### Discovery
+This repo serves structured data for agents, crawlers, and tools to intake the standard programmatically:
 
-1. Load `~/.agents/AGENTS.md` (global — always loaded first regardless of working directory)
-2. Walk from repo root to load `.agents/AGENTS.md` (project-level rules, committed)
-3. Walk from `cwd` upward and load any `.agents/AGENTS.md` files (folder-specific rules)
-4. Merge all rules: global as base, each layer adds constraints
-5. Conflicting rules: most specific scope wins (folder > project > global)
+| File | What it is | Who it's for |
+|------|-----------|--------------|
+| [`llms.txt`](llms.txt) | Plain text summary of the spec + agent config map | LLMs, agents, crawlers |
+| [`agents.json`](agents.json) | Structured JSON: scopes, resolution rules, all 30+ agent config paths + MCP locations | Tools, scripts, agent frameworks |
+| [`providers.json`](providers.json) | Structured JSON: 15 LLM providers, API endpoints, auth patterns, referral codes | Tools, scripts, agent frameworks |
+| [`mcp-settings.example.json`](mcp-settings.example.json) | Example universal MCP config for ~/.agents/mcp-settings.json | Users, agents |
+| [`index.html`](index.html) | The full website | Humans |
+| [`setup.sh`](setup.sh) | Symlink `~/.agents/AGENTS.md` to all agent configs | Users setting up |
 
-### Scopes
-
-| Scope | Path | Purpose | Committed? |
-|-------|------|---------|------------|
-| **Global** | `~/.agents/AGENTS.md` | Personal preferences, identity, safety policy | No |
-| **Project** | `.agents/AGENTS.md` at repo root | Team conventions, tech stack, code style | Yes |
-| **Folder** | `.agents/AGENTS.md` in subdirectories | Component-specific rules (frontend, API, tests) | Yes |
-
-### Conflict Resolution
-
-Most specific scope wins. A folder rule overrides a project rule which overrides a global rule.
-
-```markdown
-# ~/.agents/AGENTS.md (global)
-- Use tabs for indentation
-
-# .agents/AGENTS.md (project)
-- Use 2-space indentation    ← overrides global for this project
-
-# src/.agents/AGENTS.md (folder)
-- Use 4-space indentation     ← overrides project for src/ only
-```
-
-## Setup
-
-### Global (one time)
+### Quick intake
 
 ```bash
-# Create your global rules
-mkdir -p ~/.agents
-cat > ~/.agents/AGENTS.md << 'EOF'
-# My Global Agent Rules
+# For agents/crawlers — read the spec in ~2KB
+curl -sL https://agentsstandard.com/llms.txt
 
-## Identity
-You are a senior engineer.
+# For tools/scripts — structured JSON
+curl -sL https://agentsstandard.com/agents.json
 
-## Rules
-- Never hardcode secrets
-- Validate all inputs
-EOF
-```
-
-### Symlink to all agents
-
-Run [setup.sh](setup.sh) to symlink `~/.agents/AGENTS.md` into every agent's global config location:
-
-```bash
-curl -sL https://raw.githubusercontent.com/nbiish/agents-standard/main/setup.sh | bash
-```
-
-Or manually:
-
-```bash
-# Claude Code
-ln -sf ~/.agents/AGENTS.md ~/.claude/CLAUDE.md
-
-# Agy / Gemini CLI
-ln -sf ~/.agents/AGENTS.md ~/.gemini/GEMINI.md
-
-# Codex
-ln -sf ~/.agents/AGENTS.md ~/.codex/instructions.md
-
-# Cursor
-ln -sf ~/.agents/AGENTS.md ~/.cursor/rules/agents-standard
-
-# Windsurf
-ln -sf ~/.agents/AGENTS.md ~/.codeium/windsurf/rules
-
-# Cline
-ln -sf ~/.agents/AGENTS.md ~/.cline/cline_rules
-
-# Roo Code
-ln -sf ~/.agents/AGENTS.md ~/.roo/rules/agents-standard
-
-# Kiro
-ln -sf ~/.agents/AGENTS.md ~/.kiro/kiro.md
-
-# Goose
-ln -sf ~/.agents/AGENTS.md ~/.config/goose/goosehints
-
-# Junie
-ln -sf ~/.agents/AGENTS.md ~/.junie/guidelines.md
-
-# Augment
-ln -sf ~/.agents/AGENTS.md ~/.augment/guidelines
-
-# Trae
-ln -sf ~/.agents/AGENTS.md ~/.trae/rules/agents-standard
-
-# Crush
-ln -sf ~/.agents/AGENTS.md ~/.config/crush/crush.md
-
-# Hermes Agent
-ln -sf ~/.agents/AGENTS.md ~/.hermes/SOUL.md
-
-# MiniCC
-ln -sf ~/.agents/AGENTS.md ~/.minicc/AGENTS.md
-
-# Deep Agents (dcode)
-ln -sf ~/.agents/AGENTS.md ~/.deepagents/AGENTS.md
-```
-
-### Project-level
-
-```bash
-# In your project root
-mkdir -p .agents
-cat > .agents/AGENTS.md << 'EOF'
-# Project Rules
-- Next.js 15 with App Router
-- All API routes use Zod validation
-EOF
-
-# Symlink to agent-specific files
-ln -sf .agents/AGENTS.md CLAUDE.md
-ln -sf .agents/AGENTS.md .cursorrules
-ln -sf .agents/AGENTS.md .windsurfrules
-ln -sf .agents/AGENTS.md GEMINI.md
-ln -sf .agents/AGENTS.md CODESTRAL.md
-ln -sf .agents/AGENTS.md QWEN.md
-ln -sf .agents/AGENTS.md CRUSH.md
+# For users — run the setup
+curl -sL https://agentsstandard.com/setup.sh | bash
 ```
 
 ## Agent Config Map
 
-Every agent's config file and its location, verified against official documentation:
+Every major agent's config file, global path, and project path — verified against official docs:
 
 | Agent | Config File | Global Path | Project Path | Native? |
 |-------|------------|-------------|--------------|---------|
-| **Pi** | `AGENTS.md` | `~/.agents/AGENTS.md` | `.agents/AGENTS.md` | Yes |
-| **Claude Code** | `CLAUDE.md` | `~/.claude/CLAUDE.md` | `CLAUDE.md` | — |
-| **Agy** | `GEMINI.md` | `~/.gemini/GEMINI.md` | `GEMINI.md` | — |
-| **OpenAI Codex** | `AGENTS.md` | `~/.codex/instructions.md` | `AGENTS.md` | — |
-| **Cursor** | `.cursorrules` | `~/.cursor/rules/` | `.cursorrules` | — |
-| **GitHub Copilot** | `copilot-instructions.md` | Settings UI | `.github/copilot-instructions.md` | — |
-| **Windsurf** | `.windsurfrules` | `~/.codeium/windsurf/` | `.windsurfrules` | — |
-| **Cline** | `.clinerules` | `~/.cline/cline_rules` | `.clinerules` | — |
-| **Roo Code** | `.roorules` | `~/.roo/rules/` | `.roorules` | — |
-| **Kiro** | `kiro.md` | `~/.kiro/kiro.md` | `.kiro/kiro.md` | — |
-| **Kilo Code** | `AGENTS.md` | — | `AGENTS.md` | Yes |
-| **Augment** | `.augment-guidelines` | `~/.augment/guidelines` | `.augment-guidelines` | — |
-| **Goose** | `goosehints` | `~/.config/goose/goosehints` | `.goosehints` | — |
-| **Junie** | `guidelines.md` | `~/.junie/guidelines.md` | `.junie/guidelines.md` | — |
-| **Trae** | `.trae/rules/` | `~/.trae/rules/` | `.trae/rules/` | — |
-| **Devin** | `instructions.md` | Settings UI | `.devin/instructions.md` | — |
-| **Warp** | `warp.md` | — | `WARP.md` | — |
-| **Crush** | `AGENTS.md` | `~/.config/crush/crush.md` | `CRUSH.md` | — |
-| **OpenCode** | `AGENTS.md` | — | `AGENTS.md` | Yes |
-| **Deep Agents (dcode)** | `AGENTS.md` | `~/.deepagents/AGENTS.md` | `.deepagents/AGENTS.md` | Yes |
-| **CodeWhale** | `AGENTS.md` | — | `AGENTS.md` | — |
-| **Hermes Agent** | `AGENTS.md` | `~/.hermes/SOUL.md` | `AGENTS.md` | — |
-| **Agent Zero (a0)** | `AGENTS.md` | — | `AGENTS.md` | — |
-| **Aider** | `.aider.conf.yml` | `~/.aider.conf.yml` | `.aider.conf.yml` | — |
-| **Continue** | `config.json` | `~/.continue/config.json` | `.continue/config.json` | — |
-| **Qwen Code** | `QWEN.md` | — | `QWEN.md` | — |
-| **Mistral Codestral** | `CODESTRAL.md` | — | `CODESTRAL.md` | — |
-| **Zed** | `AGENTS.md` | — | `AGENTS.md` | Yes |
-| **MiniCC** | `AGENTS.md` | `~/.minicc/AGENTS.md` | `AGENTS.md` | — |
-| **fcc-claude** | `AGENTS.md` | `~/.fcc/.env` | `AGENTS.md` | — |
+| Pi | `AGENTS.md` | `~/.agents/AGENTS.md` | `AGENTS.md` | Yes |
+| Claude Code | `CLAUDE.md` | `~/.claude/CLAUDE.md` | `CLAUDE.md` | — |
+| Agy / Gemini CLI | `GEMINI.md` | `~/.gemini/GEMINI.md` | `GEMINI.md` | — |
+| OpenAI Codex | `AGENTS.md` | `~/.codex/instructions.md` | `AGENTS.md` | — |
+| Cursor | `.cursorrules` | `~/.cursor/rules/` | `.cursorrules` | — |
+| GitHub Copilot | `copilot-instructions.md` | Settings UI | `.github/copilot-instructions.md` | — |
+| Windsurf | `.windsurfrules` | `~/.codeium/windsurf/` | `.windsurfrules` | — |
+| Cline | `.clinerules` | `~/.cline/cline_rules` | `.clinerules` | — |
+| Roo Code | `.roorules` | `~/.roo/rules/` | `.roorules` | — |
+| Kiro | `kiro.md` | `~/.kiro/kiro.md` | `.kiro/kiro.md` | — |
+| Kilo Code | `AGENTS.md` | — | `AGENTS.md` | Yes |
+| Augment | `.augment-guidelines` | `~/.augment/guidelines` | `.augment-guidelines` | — |
+| Goose | `goosehints` | `~/.config/goose/goosehints` | `.goosehints` | — |
+| Junie | `guidelines.md` | `~/.junie/guidelines.md` | `.junie/guidelines.md` | — |
+| Trae | `.trae/rules/` | `~/.trae/rules/` | `.trae/rules/` | — |
+| Devin | `instructions.md` | Settings UI | `.devin/instructions.md` | — |
+| Warp | `warp.md` | — | `WARP.md` | — |
+| Crush | `AGENTS.md` | `~/.config/crush/crush.md` | `CRUSH.md` | — |
+| OpenCode | `AGENTS.md` | — | `AGENTS.md` | Yes |
+| Deep Agents (dcode) | `AGENTS.md` | `~/.deepagents/AGENTS.md` | `.deepagents/AGENTS.md` | Yes |
+| CodeWhale | `AGENTS.md` | — | `AGENTS.md` | — |
+| Hermes Agent | `AGENTS.md` | `~/.hermes/SOUL.md` | `AGENTS.md` | — |
+| Agent Zero (a0) | `AGENTS.md` | — | `AGENTS.md` | — |
+| Aider | `.aider.conf.yml` | `~/.aider.conf.yml` | `.aider.conf.yml` | — |
+| Continue | `config.json` | `~/.continue/config.json` | `.continue/config.json` | — |
+| Qwen Code | `QWEN.md` | — | `QWEN.md` | — |
+| Mistral Codestral | `CODESTRAL.md` | — | `CODESTRAL.md` | — |
+| Zed | `AGENTS.md` | — | `AGENTS.md` | Yes |
+| MiniCC | `AGENTS.md` | `~/.minicc/AGENTS.md` | `AGENTS.md` | — |
+| fcc-claude | `AGENTS.md` | `~/.fcc/.env` | `AGENTS.md` | — |
 
-Full structured data with MCP config paths and docs links in **[agents.json](agents.json)**.
+Full structured data in [`agents.json`](agents.json) — includes MCP config paths and docs verification links.
 
 ## MCP Config Map
 
-Where each agent stores its MCP (Model Context Protocol) server configurations:
+Every agent's MCP server configuration location:
 
 | Agent | Global MCP Config | Project MCP Config | Format |
 |-------|-------------------|-------------------|--------|
 | Claude Code | `~/.claude.json` | `.mcp.json` | JSON |
-| Agy | `~/.gemini/settings.json` | `.gemini/settings.json` | JSON |
+| Agy / Gemini CLI | `~/.gemini/settings.json` | `.gemini/settings.json` | JSON |
 | Codex | `~/.codex/config.toml` | — | TOML |
 | Cursor | `~/.cursor/mcp.json` | `.cursor/mcp.json` | JSON |
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` | — | JSON |
@@ -282,15 +154,47 @@ Every agent needs a model. Provider API endpoints, auth, free tiers, and referra
 
 Full structured data: [`providers.json`](providers.json)
 
-## The Complete `~/.agents/` Directory
+## The Full ~/.agents/ Directory
 
 ```
+# Global ~/.agents/ (behavior + tooling)
 ~/.agents/
-├── AGENTS.md              ← Behavior rules (this standard)
-├── mcp-settings.json      ← MCP server configs (universal)
-└── skills/                ← Agent Skills (capabilities)
+├── AGENTS.md              ← Behavior rules (global base, loaded first)
+├── mcp-settings.json      ← MCP server configs (all agents read from here)
+└── skills/                ← Agent Skills (reusable capabilities)
     └── **/SKILL.md        ← Skills discovered by all agents
 ```
+
+```
+# Project .agents/ (tooling + project base rules)
+{project}/.agents/
+├── AGENTS.md              ← Project base rules (committed rules for tech stack, deployment)
+├── mcp-settings.json      ← Project-specific MCP servers
+└── skills/                ← Project-specific agent skills
+    └── **/SKILL.md
+```
+
+> **Note:** Project base rules go in `{project}/.agents/AGENTS.md`, and project active/PRD rules (commonly modified task/feature rules) go in `{project}/AGENTS.md` at the repo root.
+
+- **AGENTS.md** = how the agent should *behave* (this standard)
+- **mcp-settings.json** = what tools the agent can *use* (MCP servers)
+- **skills/**/SKILL.md** = what the agent can *do* ([Agent Skills](https://agentskills.io))
+
+## Contribute
+
+**[Open an issue](https://github.com/nbiish/agentsstandard-dot-com/issues/new)** to:
+
+### For providers
+
+Your agent tool updated its config file location? Your agent now reads `~/.agents/AGENTS.md` natively? Open an **[agent update](https://github.com/nbiish/agentsstandard-dot-com/issues/new?labels=update&template=agent-update.md)** issue with the new path and a link to your docs.
+
+### For users
+
+Found a new agent that's not on the map? Agent changed its config format? Open a **[new agent](https://github.com/nbiish/agentsstandard-dot-com/issues/new?labels=new-agent&template=new-agent.md)** issue with the config file name, paths, and a source link.
+
+### For everyone
+
+Want to change the spec itself? Open a **[spec change](https://github.com/nbiish/agentsstandard-dot-com/issues/new?labels=spec&template=spec-change.md)** issue with what you want to change and why.
 
 ## Relationship to Agent Skills
 
@@ -300,22 +204,12 @@ Full structured data: [`providers.json`](providers.json)
 
 Both use the `.agents/` directory. They complement each other.
 
-## Contribute
+## Repos
 
-- **[Open an issue](https://github.com/nbiish/agentsstandard-dot-com/issues/new)** to add a new agent, update config paths, or propose spec changes
-- **[Spec repo](https://github.com/nbiish/agents-standard)** — the standard itself
-- **[Site repo](https://github.com/nbiish/agentsstandard-dot-com)** — the website, issue tracker, contribution hub
-
-## Adopt
-
-For agent tool developers — four steps:
-
-1. Search for `~/.agents/AGENTS.md` at startup — load as global user rules (loaded first)
-2. Walk from repo root to load `.agents/AGENTS.md` — project-level rules
-3. Walk from `cwd` upward collecting `.agents/AGENTS.md` files — folder-scoped rules
-4. Merge: global as base, most specific scope wins conflicts
-
-No dependencies. No schema. No build step. Just markdown files in directories.
+| Repo | What it is |
+|------|-----------|
+| [nbiish/agents-standard](https://github.com/nbiish/agents-standard) | The specification (README, setup.sh, agents.json) |
+| [nbiish/agentsstandard-dot-com](https://github.com/nbiish/agentsstandard-dot-com) | This repo — website + machine-readable files + issue tracker |
 
 ## License
 
