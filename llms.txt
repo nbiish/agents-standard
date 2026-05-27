@@ -1,0 +1,53 @@
+# agents-standard
+
+> Specification for the AGENTS.md hierarchical configuration standard.
+> One file convention, three scopes, all agents.
+
+## Version
+
+1.1.0
+
+## Resolution Order
+
+1. `~/.agents/AGENTS.md` — Global user rules (loaded first)
+2. `.agents/AGENTS.md` at repo root — Project rules (committed)
+3. `.agents/AGENTS.md` in cwd — Folder-specific rules
+
+Most specific scope wins (folder > project > global). Each layer extends, not replaces.
+
+## Agent Coverage
+
+30 agents tracked with verified config file paths, MCP config locations, and docs URLs.
+Full structured data: https://agentsstandard.com/agents.json
+
+## Agents with Native AGENTS.md Support
+
+- Pi — reads ~/.agents/AGENTS.md and .agents/AGENTS.md
+- Kilo Code — reads AGENTS.md at project root
+- OpenCode — reads AGENTS.md at project root
+- Deep Agents (dcode) — reads .deepagents/AGENTS.md and AGENTS.md
+- Zed — reads AGENTS.md at project root
+
+All other agents can symlink ~/.agents/AGENTS.md into their config location.
+
+## Standard Directory Layout
+
+```
+~/.agents/
+├── AGENTS.md              ← Behavior rules (this standard)
+├── mcp-settings.json      ← MCP server configs (universal, planned)
+└── skills/                ← Agent Skills
+    └── **/SKILL.md
+```
+
+## Format
+
+Plain Markdown. No YAML frontmatter. No schema.
+
+## Links
+
+- Website: https://agentsstandard.com
+- Spec repo: https://github.com/nbiish/agents-standard
+- Site repo: https://github.com/nbiish/agentsstandard-dot-com
+- Structured data: https://agentsstandard.com/agents.json
+- Setup script: https://raw.githubusercontent.com/nbiish/agents-standard/main/setup.sh
