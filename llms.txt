@@ -2,11 +2,11 @@
 
 > Specification for the AGENTS.md hierarchical configuration standard.
 > One file convention, five-tier loading, all agents.
-> Note: This project spans two repositories: the specification/CLI repository (nbiish/agents-standard) and the website/documentation repository (nbiish/agentsstandard-dot-com). We actively work on both repositories to maintain consistency between the online docs and the core specifications/CLI tools.
+> This project spans two repositories: the specification/CLI repository (nbiish/agents-standard) and the website repository (nbiish/agentsstandard-dot-com).
 
 ## Version
 
-1.4.0
+2.0.0-alpha
 
 ## The Standard
 
@@ -27,98 +27,193 @@ Most specific rules win (folder > active > project base > global). Each layer ex
 
 ## Agent Coverage
 
-23 agents tracked in the CLI with verified config file paths.
-30 agents tracked overall with verified config file paths, MCP config locations, and docs URLs.
+30 agents tracked with verified config file paths, MCP config locations, and docs URLs.
 Full structured data: https://agentsstandard.com/agents.json
 
-## Agents with Native AGENTS.md Support
+Native AGENTS.md agents (read ~/.agents/AGENTS.md directly, no symlink needed):
+Pi, CodeWhale, Kilo Code, OpenCode, Deep Agents (dcode), Zed
 
-- Pi — reads ~/.agents/AGENTS.md and .agents/AGENTS.md
-- CodeWhale — reads ~/.agents/AGENTS.md natively and AGENTS.md at project root
-- Kilo Code — reads AGENTS.md at project root
-- OpenCode — reads AGENTS.md at project root
-- Deep Agents (dcode) — reads .deepagents/AGENTS.md and AGENTS.md
-- Zed — reads AGENTS.md at project root and ~/.config/zed/AGENTS.md globally
+## CLI Tool v2.0.0
 
-All other agents can symlink ~/.agents/AGENTS.md into their config location.
-
-## CLI Tool
-
-**Location**: `cli/index.js` — Zero dependencies, Node.js >=16 built-ins only.
+**Location**: `cli/` — Zero dependencies, Node.js >=16 built-ins only.
 
 **Install**:
 ```
 npm install -g agents-standard
 ```
-Or run directly: `node cli/index.js`
 
-### Commands
+**Three bin names**:
+```
+.agents                    # Primary (dotted prefix — matches .agents/ convention)
+agents-standard            # Legacy alias (full backward compatibility)
+agents                     # Legacy alias
+```
 
-| Command | Flag | Description |
-|---------|------|-------------|
-| Interactive TUI | _(default)_ | Checkbox-based TUI to toggle symlinks per agent |
-| List status | `--list` / `-l` | Print all agents with current link status |
-| Link all | `--link-all` / `-a` | Non-interactive: symlink all supported agents |
-| Set depth | `--depth N` | Set AGENTS_DEPTH (1–10), prints to stdout |
-| Version | `--version` / `-v` | Print CLI version |
-| Help | `--help` / `-h` | Show usage and key bindings |
+### Subcommand Structure
 
-### Interactive TUI
+All operations use `{command} {subcommand}` syntax. The `--json` flag enables headless machine-readable output on every command.
 
-Navigate a list of 23 agents, toggle symlink creation on/off with space, then submit all changes at once.
+```
+.agents {command} [flags]
 
-**Key Bindings**:
+Commands:
+  rules                    Manage AGENTS.md rules & symlinks
+  mcp                      Manage MCP server catalogs and project configs
+  skills                   Manage agent skills
+  setup                    Bootstrap .agents/ in current project
+  status                   System-wide health check
+  tui                      Interactive terminal dashboard (default)
 
-| Key | Action |
-|-----|--------|
-| `↑` `↓` / `j` `k` | Navigate agent list |
-| `Space` | Toggle symlink on/off for selected agent |
-| `Enter` | Submit changes (when cursor is on "Submit changes" bar) |
-| `d` | Cycle AGENTS_DEPTH (1–5) |
-| `g` | Change global AGENTS.md path |
-| `q` | Quit |
-| `Ctrl+C` | Quit |
+Flags (all commands):
+  --json                   Output as JSON (headless/API mode for AI agents)
+  --project <path>         Target a specific project directory
+```
 
-**What Submit does**:
-- Creates symlinks from `~/.agents/AGENTS.md` to each toggled agent's global config path
-- Removes symlinks for agents toggled off (only if they point to our global file)
-- Creates `~/.agents/AGENTS.md` with a starter template if it doesn't exist
-- Writes `export AGENTS_DEPTH=N` to `~/.zshenv`, `~/.bashrc`, and `~/.profile`
+### Rules Management
 
-### Agent List (CLI)
+```
+.agents rules list              List all 30 agents & link status
+.agents rules list --json        Machine-readable JSON for AI agents
+.agents rules link               Open TUI to toggle symlinks
+.agents rules link --all         Link all agents (headless)
+.agents rules unlink             Unlink all agents
+.agents rules depth [N]          Get/set AGENTS_DEPTH (1-10)
+.agents rules path [path]        Get/set AGENTS_PATH
+```
 
-| Agent | Global Path | Type |
-|-------|------------|------|
-| Pi | — | native (reads ~/.agents/AGENTS.md) |
-| CodeWhale | — | native (reads ~/.agents/AGENTS.md) |
-| Claude Code | `~/.claude/CLAUDE.md` | symlink |
-| Agy / Gemini CLI | `~/.gemini/GEMINI.md` | symlink |
-| OpenAI Codex | `~/.codex/instructions.md` | symlink |
-| Cursor | `~/.cursor/rules/agents-standard` | symlink |
-| Windsurf | `~/.codeium/windsurf/rules` | symlink |
-| Cline | `~/.cline/cline_rules` | symlink |
-| Roo Code | `~/.roo/rules/agents-standard` | symlink |
-| Kiro | `~/.kiro/kiro.md` | symlink |
-| Augment | `~/.augment/guidelines` | symlink |
-| Goose | `~/.config/goose/goosehints` | symlink |
-| Junie | `~/.junie/guidelines.md` | symlink |
-| Trae | `~/.trae/rules/agents-standard` | symlink |
-| Crush | `~/.config/crush/crush.md` | symlink |
-| Hermes Agent | `~/.hermes/SOUL.md` | symlink |
-| MiniCC | `~/.minicc/AGENTS.md` | symlink |
-| Deep Agents (dcode) | `~/.deepagents/AGENTS.md` | symlink |
-| Zed | `~/.config/zed/AGENTS.md` | symlink |
-| Aider | `~/.aider.conf.yml` | YAML format — manual setup |
-| Continue | `~/.continue/config.json` | JSON format — manual setup |
-| GitHub Copilot | — | project-only, no global file |
-| Warp | — | settings UI, no global file |
+### MCP Server Management (Core Innovation)
 
-### Environment Variables
+The CLI manages a global MCP catalog (`~/.agents/mcp-settings.json`) and pulls servers into projects as `.mcp.json`:
 
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `AGENTS_DEPTH` | Controls how many directory tiers load AGENTS.md (1=global only, 3=default) | `3` |
-| `AGENTS_PATH` | Override the global AGENTS.md path | `~/.agents/AGENTS.md` |
+```
+.agents mcp catalog              List servers in global catalog
+.agents mcp catalog toggle <n>   Enable/disable a server
+.agents mcp project              List servers in project .mcp.json
+.agents mcp pull <name>          Pull server from catalog into project
+.agents mcp pull --all           Pull all enabled servers
+.agents mcp push <name>          Remove from project config
+.agents mcp health               Check required environment variables
+.agents mcp find <query>         Search catalog by name/description/tags
+```
+
+**Secret safety**: When pulling, raw API keys are automatically substituted with `${ENV_VAR}` references. `.mcp.json` is safe to commit. `mcp-settings.json` stays private.
+
+**Naming convention**:
+- `mcp-settings.json` = Global catalog with API keys (private, do NOT commit)
+- `.mcp.json` = Project live config with `${ENV_VAR}` refs (safe to commit)
+
+Claude Code, Cursor, VS Code, Kiro, Junie, Trae, and dcode all use `.mcp.json` for project MCP configs. Adopted as the standard project-level convention.
+
+### Skills Management
+
+```
+.agents skills list              List global + project skills
+.agents skills info <name>       Show SKILL.md content
+```
+
+### Project Bootstrap
+
+```
+.agents setup                    Interactive wizard
+.agents setup --quick            Non-interactive (use defaults)
+.agents setup --mcp              Only set up .mcp.json
+.agents setup --rules            Only set up AGENTS.md
+.agents setup --skills           Only set up skills directory
+```
+
+### Health Check
+
+```
+.agents status                   Full system health report
+.agents status --json            Machine-readable JSON
+.agents doctor --fix             Auto-fix common issues
+```
+
+### Headless JSON Mode — AI Agent to AI Agent
+
+Every command supports `--json` for programmatic consumption. Exit codes: 0=success, 1=error, 2=catalog validation error, 3=permission error.
+
+```
+.agents rules list --json     → [{"key":"claude-code","name":"Claude Code","status":"linked",...}]
+.agents mcp catalog --json    → {"servers":[{...}],"summary":{...}}
+.agents status --json         → {"healthy":true,"checks":[...],"issues":[]}
+```
+
+### Backward Compatibility
+
+All v1.4.0 flat flags still work:
+```
+agents-standard --list         → .agents rules list
+agents-standard --link-all     → .agents rules link --all
+agents-standard --depth 3      → .agents rules depth 3
+agents-standard --version      → .agents version
+```
+
+### TUI (Interactive Dashboard)
+
+Default mode when run without a subcommand in a TTY. Tabbed dashboard with:
+- **Rules tab**: Toggle symlinks per agent (↑↓/space/enter)
+- **MCP tab**: Browse catalog, pull servers into project
+- **Skills tab**: List and manage skills
+- **Status tab**: Health overview
+
+### Code Structure
+
+```
+cli/
+├── index.js              # Command router, argument parser
+├── package.json          # Bin definitions, v2.0.0-alpha
+├── lib/
+│   ├── constants.js      # 30-agent registry, MCP_FORMATS, ENV_VAR_MAP
+│   ├── fs-helpers.js     # Symlink, directory, file utilities
+│   ├── catalog.js        # mcp-settings.json CRUD + validation
+│   ├── scaffold.js       # Agent-specific MCP config generation (v2.1.0)
+│   ├── formatters.js     # JSON, table, key-value output
+│   └── env-var.js        # API key → env var substitution
+├── commands/
+│   ├── rules.js          # AGENTS.md management (TUI + headless)
+│   ├── mcp.js            # MCP catalog & project management
+│   ├── skills.js         # Skill discovery
+│   ├── setup.js          # Project bootstrap
+│   ├── status.js         # Health check / doctor
+│   └── tui.js            # Interactive dashboard
+└── test/
+    ├── rules.test.js     # 13 tests
+    └── mcp.test.js       # 20 tests
+```
+
+## MCP Config Map
+
+Per-agent MCP project config locations and formats:
+
+| Agent | Project MCP Config | Format |
+|-------|-------------------|--------|
+| Claude Code | `.mcp.json` | JSON |
+| Cursor | `.cursor/mcp.json` | JSON |
+| Agy / Gemini CLI | `.gemini/settings.json` | JSON |
+| Codex | — (TOML, global only) | TOML |
+| Windsurf | — (global only) | JSON |
+| Copilot | `.github/copilot-mcp.json` | JSON |
+| Roo Code | `.roo/mcp.json` | JSON |
+| Kiro | `.kiro/settings/mcp.json` | JSON |
+| Kilo Code | `kilo.jsonc` | JSONC |
+| Junie | `.junie/mcp/mcp.json` | JSON |
+| Crush | `crush.json` | JSON |
+| OpenCode | `opencode.json` | JSONC |
+| Qwen Code | `.qwen/settings.json` | JSON |
+| MiniCC | `.minicc/mcp.json` | JSON |
+| Warp | `.warp/mcp.json` | JSON |
+| Continue | `.continue/mcpServers/` | YAML |
+| Goose | — (global only) | YAML |
+| Hermes Agent | — (global only) | YAML |
+
+## LLM Provider Support
+
+15 providers tracked in providers.json with API endpoints, auth patterns, and free tier info.
+
+Full structured data: https://agentsstandard.com/providers.json
+
+Key endpoint note: Per Augment docs, the Augment Code API is full Anthropic Messages API compatible at `https://api.augmentcode.com/anthropic/v1` using `AUGMENT_API_KEY`.
 
 ## Standard Directory Layout
 
@@ -126,17 +221,48 @@ Navigate a list of 23 agents, toggle symlink creation on/off with space, then su
 # Global ~/.agents/ (behavior + tooling)
 ~/.agents/
 ├── AGENTS.md              <- Behavior rules (global base, loaded first)
-├── mcp-settings.json      <- MCP server configs (universal)
+├── mcp-settings.json      <- MCP server CATALOG (definitions with keys — PRIVATE)
 └── skills/                <- Agent Skills
     └── **/SKILL.md
 
 # Project .agents/ (tooling + project base rules)
 {project}/.agents/
-├── AGENTS.md              <- Project base rules (committed rules for tech stack, deployment)
-├── mcp-settings.json      <- Project-specific MCP servers
-└── skills/                <- Project-specific agent skills
-    └── **/SKILL.md
+├── AGENTS.md              <- Project base rules (committed, tech stack/deployment)
+├── skills/                <- Project-specific agent skills
+│   └── **/SKILL.md
+└── .mcp.json              <- at project root (not in .agents/ — Claude Code convention)
 ```
+
+**Important naming distinction:**
+- `mcp-settings.json` = Global CATALOG (private, with API keys)
+- `.mcp.json` = Project LIVE config (public, with ${ENV_VAR} refs)
+
+## Contribute — Open Model for Humans AND AI Agents
+
+This is an open standard. Both humans and AI agents can contribute.
+
+### Quick: Open an Issue
+- Agent update: https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=agent-update.md
+- New agent: https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=new-agent.md
+- Spec change: https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=spec-change.md
+- MCP server: https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=mcp-server.md
+- Bug report: https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=bug.md
+
+### For AI Agents Contributing
+1. Read `agents.json` for the current registry format
+2. Read `CONTRIBUTING.md` for the contribution protocol
+3. Verify config paths against the agent's official docs
+4. Submit a PR with the updated agents.json following the schema
+5. Include a link to the official docs as verification
+
+All PRs must pass: `node cli/test/rules.test.js && node cli/test/mcp.test.js`
+
+## Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `AGENTS_DEPTH` | Controls directory tiers for AGENTS.md loading | `3` |
+| `AGENTS_PATH` | Override global AGENTS.md path | `~/.agents/AGENTS.md` |
 
 ## Format
 
@@ -148,21 +274,13 @@ Plain Markdown. No YAML frontmatter. No schema.
 - Spec repo: https://github.com/nbiish/agents-standard
 - Site repo: https://github.com/nbiish/agentsstandard-dot-com
 - Structured data: https://agentsstandard.com/agents.json
+- Provider data: https://agentsstandard.com/providers.json
 - Setup script: https://raw.githubusercontent.com/nbiish/agents-standard/main/setup.sh
 
-## Development Status & Context
+## Relationship to Agent Skills
 
-- **Recent Updates (v1.4.0)**:
-  - CLI TUI now features space-bar toggling and a "Submit changes" confirmation bar at the bottom.
-  - Added **Zed** (`~/.config/zed/AGENTS.md`) and **CodeWhale** (`~/.agents/AGENTS.md`, native) to the CLI agent list.
-  - Fixed keypress event handling (`readline.emitKeypressEvents`) so interactive input works correctly.
-  - Added TTY detection — non-TTY environments get a helpful error instead of a crash.
-  - Added `--version` / `-v` flag.
-  - `q` key now properly exits the TUI (previously set a flag that was never checked).
-  - Terminal row count falls back to 24 when `process.stdout.rows` is undefined.
-  - Version bumped to 1.4.0 across `package.json` and TUI header.
-  - Fully synchronized all specification tables, JSON files, and CLI sources between `agentsstandard-dot-com` (website/docs repo) and `agents-standard` (spec/CLI repo).
-- **Current Goals & Iterations**:
-  - Track downstream adoption of standard directories and global configurations.
-  - Keep agent configuration mappings updated in `agents.json` as new agents add support.
-  - Maintain the automated CLI link system matching the latest `agents.json` metadata.
+- **Agent Skills** (SKILL.md) = what the agent can *do* (https://agentskills.io)
+- **Agents Standard** (AGENTS.md) = how the agent should *behave*
+- **mcp-settings.json** = what external tools are available
+
+Both use the `.agents/` directory. They complement each other.

@@ -20,6 +20,136 @@ Rules cascade and extend, not replace. Same model as `.editorconfig`, `.eslintrc
 
 Full specification: **[nbiish/agents-standard](https://github.com/nbiish/agents-standard)**
 
+## .agents CLI v2.0.0
+
+Manage your entire multi-agent configuration with one tool:
+
+```bash
+npm install -g agents-standard
+```
+
+### Three bins, one tool
+
+```bash
+.agents                    # Primary (dotted prefix — matches .agents/ directory convention)
+agents-standard            # Legacy alias (full backward compatibility)
+agents                     # Legacy alias
+```
+
+### Commands
+
+```
+.agents {command} [flags]
+
+Commands:
+  rules                    Manage AGENTS.md rules & symlinks
+  mcp                      Manage MCP server catalogs and project configs
+  skills                   Manage agent skills
+  setup                    Bootstrap .agents/ in current project
+  status                   System-wide health check
+  tui                      Interactive terminal dashboard (default)
+
+Flags (all commands):
+  --json                   Output as JSON (headless/API mode for AI agents)
+  --project <path>         Target a specific project directory
+```
+
+### Rules — AGENTS.md Management
+
+```bash
+# List all 30 agents and their symlink status
+.agents rules list
+.agents rules list --json      # Machine-readable for AI agents
+
+# Interactive TUI — toggle symlinks with space, submit with Enter
+.agents rules link
+
+# Headless link/unlink all agents
+.agents rules link --all
+.agents rules unlink
+
+# Manage depth and path
+.agents rules depth            # → AGENTS_DEPTH=3
+.agents rules depth 5          # Set to 5
+.agents rules path ~/custom/AGENTS.md
+```
+
+### MCP — Server Management (the core innovation)
+
+```bash
+# Browse the global catalog (~/.agents/mcp-settings.json)
+.agents mcp catalog
+.agents mcp catalog toggle brave-search   # Enable/disable globally
+
+# Pull servers into your project (.mcp.json — safe to commit!)
+.agents mcp pull brave-search
+.agents mcp pull --all                    # Pull all enabled servers
+# API keys are AUTOMATICALLY substituted with ${ENV_VAR} references
+
+# See what's in your project
+.agents mcp project
+
+# Check environment variables
+.agents mcp health
+.agents mcp health --json
+
+# Remove from project (keeps server in catalog)
+.agents mcp push brave-search
+
+# Search for servers
+.agents mcp find search
+```
+
+**Secret safety**: When you `pull` a server from the catalog (which stores your API keys), the CLI replaces raw keys with `${ENV_VAR}` references. Your project's `.mcp.json` is safe to commit. The catalog at `~/.agents/mcp-settings.json` stays private.
+
+### Project Bootstrap
+
+```bash
+.agents setup                    # Interactive wizard
+.agents setup --quick            # Non-interactive: create everything
+.agents setup --mcp              # Only set up .mcp.json
+.agents setup --rules            # Only set up AGENTS.md
+.agents setup --skills           # Only set up skills directory
+```
+
+Creates:
+- `.agents/AGENTS.md` — Project base rules (commit these)
+- `AGENTS.md` — Project active rules (commonly modified)
+- `.mcp.json` — Project MCP servers (safe to commit, no raw keys)
+- `.agents/skills/` — Project-specific skills
+
+### Health Check
+
+```bash
+.agents status                   # Full system health report
+.agents status --json            # Machine-readable
+.agents doctor --fix             # Auto-fix common issues
+```
+
+### Headless JSON Mode — AI Agent to AI Agent
+
+Every command supports `--json` for programmatic consumption by other agents:
+
+```bash
+.agents rules list --json        # → [{"key":"claude-code","name":"Claude Code","status":"linked",...}]
+.agents mcp catalog --json       # → {"servers":[{...}], "summary":{...}}
+.agents status --json            # → {"healthy":true,"checks":[...],"issues":[]}
+.agents skills list --json       # → {"global":[...],"project":[...]}
+```
+
+Exit codes: `0` = success, `1` = error, `2` = catalog validation error, `3` = permission error.
+
+### Backward Compatibility
+
+All v1.4.0 flags still work:
+
+```bash
+agents-standard --list           # → .agents rules list
+agents-standard --link-all       # → .agents rules link --all
+agents-standard --depth 3        # → .agents rules depth 3
+agents-standard --version        # → .agents version
+```
+
 ## Separation of Concerns: llms.txt (PRD) vs AGENTS.md (Rules)
 
 The standard unifies project instructions by separating **what/why** from **how**:
@@ -48,6 +178,7 @@ This repo serves structured data for agents, crawlers, and tools to intake the s
 | [`mcp-settings.example.json`](mcp-settings.example.json) | Example universal MCP config for ~/.agents/mcp-settings.json | Users, agents |
 | [`index.html`](index.html) | The full website | Humans |
 | [`setup.sh`](setup.sh) | Symlink `~/.agents/AGENTS.md` to all agent configs | Users setting up |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute — for humans AND AI agents | Everyone |
 
 ### Quick intake
 
@@ -60,7 +191,38 @@ curl -sL https://agentsstandard.com/agents.json
 
 # For users — run the setup
 curl -sL https://agentsstandard.com/setup.sh | bash
+
+# For users — install the CLI
+npm install -g agents-standard
 ```
+
+## The Full ~/.agents/ Directory
+
+```
+# Global ~/.agents/ (behavior + tooling)
+~/.agents/
+├── AGENTS.md              ← Behavior rules (global base, loaded first)
+├── mcp-settings.json      ← MCP server CATALOG (stores definitions with keys — PRIVATE)
+└── skills/                ← Agent Skills (reusable capabilities)
+    └── **/SKILL.md        ← Skills discovered by all agents
+```
+
+```
+# Project .agents/ (tooling + project base rules)
+{project}/.agents/
+├── AGENTS.md              ← Project base rules (committed rules for tech stack, deployment)
+├── skills/                ← Project-specific agent skills
+│   └── **/SKILL.md
+└── .mcp.json              ← at project root (not in .agents/ — matches Claude Code convention)
+```
+
+**Naming conventions**:
+- `mcp-settings.json` = Global CATALOG with API keys (private, do not commit)
+- `.mcp.json` = Project LIVE config with `${ENV_VAR}` refs (safe to commit)
+
+- **AGENTS.md** = how the agent should *behave* (this standard)
+- **mcp-settings.json** = what tools the agent can *use* (MCP catalog)
+- **skills/**/SKILL.md** = what the agent can *do* ([Agent Skills](https://agentskills.io))
 
 ## Agent Config Map
 
@@ -154,47 +316,39 @@ Every agent needs a model. Provider API endpoints, auth, free tiers, and referra
 
 Full structured data: [`providers.json`](providers.json)
 
-## The Full ~/.agents/ Directory
+## Contribute — For Everyone (Humans AND AI Agents)
 
-```
-# Global ~/.agents/ (behavior + tooling)
-~/.agents/
-├── AGENTS.md              ← Behavior rules (global base, loaded first)
-├── mcp-settings.json      ← MCP server configs (all agents read from here)
-└── skills/                ← Agent Skills (reusable capabilities)
-    └── **/SKILL.md        ← Skills discovered by all agents
-```
+This is an **open standard**. Contributions come from everyone — users, tool creators, providers, AND their AI agents.
 
-```
-# Project .agents/ (tooling + project base rules)
-{project}/.agents/
-├── AGENTS.md              ← Project base rules (committed rules for tech stack, deployment)
-├── mcp-settings.json      ← Project-specific MCP servers
-└── skills/                ← Project-specific agent skills
-    └── **/SKILL.md
-```
+### Quick: Open an Issue
 
-> **Note:** Project base rules go in `{project}/.agents/AGENTS.md`, and project active/PRD rules (commonly modified task/feature rules) go in `{project}/AGENTS.md` at the repo root.
+| What you want to do | Link |
+|--------------------|------|
+| Add/update an agent's config paths | [Agent update](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=agent-update.md) |
+| Request a new agent be added | [New agent](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=new-agent.md) |
+| Propose a spec change | [Spec change](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=spec-change.md) |
+| Request a new MCP server | [MCP server request](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=mcp-server.md) |
+| Report a CLI bug | [Bug report](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=bug.md) |
 
-- **AGENTS.md** = how the agent should *behave* (this standard)
-- **mcp-settings.json** = what tools the agent can *use* (MCP servers)
-- **skills/**/SKILL.md** = what the agent can *do* ([Agent Skills](https://agentskills.io))
+### For AI Agents Contributing
 
-## Contribute
+If you're an AI agent reading this, you can contribute too:
 
-**[Open an issue](https://github.com/nbiish/agentsstandard-dot-com/issues/new)** to:
+1. **Read** [`agents.json`](agents.json) for the current agent registry format
+2. **Read** [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution protocol
+3. **Check** the agent's official docs to verify config paths and MCP locations
+4. **Submit** a PR with the updated `agents.json` following the existing schema
+5. **Include** a link to the official docs as verification
 
-### For providers
+The same process applies for adding MCP servers, updating provider endpoints, or fixing CLI bugs. All PRs must pass `node cli/test/rules.test.js && node cli/test/mcp.test.js`.
 
-Your agent tool updated its config file location? Your agent now reads `~/.agents/AGENTS.md` natively? Open an **[agent update](https://github.com/nbiish/agentsstandard-dot-com/issues/new?labels=update&template=agent-update.md)** issue with the new path and a link to your docs.
+### For Providers
 
-### For users
+Your agent tool updated its config file location? Your agent now reads `~/.agents/AGENTS.md` natively? Open an **[agent update](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=agent-update.md)** issue with the new path and a link to your docs.
 
-Found a new agent that's not on the map? Agent changed its config format? Open a **[new agent](https://github.com/nbiish/agentsstandard-dot-com/issues/new?labels=new-agent&template=new-agent.md)** issue with the config file name, paths, and a source link.
+### For Users
 
-### For everyone
-
-Want to change the spec itself? Open a **[spec change](https://github.com/nbiish/agentsstandard-dot-com/issues/new?labels=spec&template=spec-change.md)** issue with what you want to change and why.
+Found a new agent that's not on the map? Agent changed its config format? Open a **[new agent](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=new-agent.md)** issue with the config file name, paths, and a source link.
 
 ## Relationship to Agent Skills
 
@@ -208,8 +362,8 @@ Both use the `.agents/` directory. They complement each other.
 
 | Repo | What it is |
 |------|-----------|
-| [nbiish/agents-standard](https://github.com/nbiish/agents-standard) | The specification (README, setup.sh, agents.json) |
-| [nbiish/agentsstandard-dot-com](https://github.com/nbiish/agentsstandard-dot-com) | This repo — website + machine-readable files + issue tracker |
+| [nbiish/agents-standard](https://github.com/nbiish/agents-standard) | The specification + CLI source (README, setup.sh, agents.json, cli/) |
+| [nbiish/agentsstandard-dot-com](https://github.com/nbiish/agentsstandard-dot-com) | Website + machine-readable files + issue tracker |
 
 ## License
 
