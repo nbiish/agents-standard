@@ -194,6 +194,7 @@ This repo serves structured data for agents, crawlers, and tools to intake the s
 | [`llms.txt`](llms.txt) | Plain text summary of the spec + agent config map | LLMs, agents, crawlers |
 | [`agents.json`](agents.json) | Structured JSON: scopes, resolution rules, all 30+ agent config paths + MCP locations | Tools, scripts, agent frameworks |
 | [`providers.json`](providers.json) | Structured JSON: 15 LLM providers, API endpoints, auth patterns, referral codes | Tools, scripts, agent frameworks |
+| [`providers.example.txt`](providers.example.txt) | providers.txt format template — TSV provider config reference for all agents | Users, tool makers, agents |
 | [`mcp-settings.example.json`](mcp-settings.example.json) | Example universal MCP config for ~/.agents/mcp-settings.json | Users, agents |
 | [`index.html`](index.html) | The full website | Humans |
 | [`setup.sh`](setup.sh) | Symlink `~/.agents/AGENTS.md` to all agent configs | Users setting up |
@@ -222,6 +223,7 @@ npm install -g agents-standard
 ~/.agents/
 ├── AGENTS.md              ← Behavior rules (global base, loaded first)
 ├── mcp-settings.json      ← MCP server CATALOG (stores definitions with keys — PRIVATE)
+├── providers.txt          ← LLM provider config reference (agent-agnostic base)
 └── skills/                ← Agent Skills (reusable capabilities)
     └── **/SKILL.md        ← Skills discovered by all agents
 ```

@@ -10,7 +10,7 @@
 |--------------------|-----|
 | Add a new agent to the registry | Edit `agents.json` — see [Agent Registry](#agent-registry-agentsjson) |
 | Add/update an MCP server in the catalog | Submit a catalog entry — see [MCP Catalog](#mcp-catalog-mcp-settingsjson) |
-| Add/update an LLM provider | Edit `providers.json` — see [LLM Providers](#llm-providers-providersjson) |
+| Add/update an LLM provider | Edit `providers.json` + `providers.txt` — see [LLM Providers](#llm-providers-providersjson--providerstxt) |
 | Fix a CLI bug or add a feature | See [CLI Development](#cli-development) |
 | Update the website content | See [Website](#website) |
 | Propose a spec change | Open a [spec change issue](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=spec-change.md) |
@@ -149,30 +149,72 @@ The CLI's `substituteEnvVars()` function automatically replaces raw API key valu
 
 ---
 
-## LLM Providers (providers.json)
+## LLM Providers (providers.json + providers.txt)
 
-### Entry Schema
+There are two complementary provider data files:
+
+- **`providers.json`** — Machine-readable structured JSON (API endpoints, auth, pricing, referral codes)
+- **`~/.agents/providers.txt`** — Human-readable TSV reference (models, capabilities, cross-tool matrix)
+
+### providers.json Entry Schema
 
 ```json
 {
   "name": "Provider Name",
   "models": ["Model 1", "Model 2"],
-  "apiBase": "https://api.provider.com/v1",
-  "authEnvVar": "PROVIDER_API_KEY",
-  "freeTier": "Free tier description or null",
-  "referral": "Optional referral code or link",
-  "docs": "https://docs.provider.com",
-  "verified": "2025-06-01"
+  "api_base": "https://api.provider.com/v1",
+  "docs_url": "https://docs.provider.com",
+  "pricing_url": "https://provider.com/pricing",
+  "auth": "Bearer token",
+  "env_var": "PROVIDER_API_KEY",
+  "free_tier": "Free tier description or null",
+  "referral": { "url": "...", "code": "...", "description": "..." }
 }
+```
+
+### providers.txt Entry Schema
+
+Each provider in providers.txt has three parts:
+
+**1. Summary Table row:**
+```
+│ provider-namespace │ https://api.provider.com/v1 │ PROVIDER_API_KEY │ — │
+```
+
+**2. Model Specification rows (one per model):**
+```
+│ # │ provider-namespace │ model-id │ prefix:model-id │ context │ output │ YES/NO │ YES/NO │ YES/NO │ NO/NO*/YES │
+```
+
+**3. Provider Detail section:**
+```
+## provider-namespace ________________________________________________________
+# Tier:        Service tier / classification
+# Endpoint:    https://api.provider.com/v1
+# Key env:     PROVIDER_API_KEY
+# Prefix:      2-5 char display prefix
+# Cross-tool:  All agents (openai_compatible format)
+# Models:      N  — model-1, model-2
+# Notes:       Freeform notes about behavior, caching, reasoning, etc.
 ```
 
 ### How to Add a Provider
 
-1. Open [`providers.json`](providers.json)
-2. Add a new entry to the `providers` array
+1. **For providers.json:** Add entry to [`providers.json`](providers.json), validate JSON
+2. **For providers.txt:** Use the format template in [`providers.example.txt`](providers.example.txt)
 3. Link to the provider's API documentation confirming the endpoint and auth method
-4. Run the JSON through a linter to verify it's valid
-5. Submit a PR
+4. Verify model IDs against the provider's public API or docs
+5. Run `node cli/test/rules.test.js && node cli/test/mcp.test.js` to verify nothing breaks
+6. Submit a PR or open a [provider update issue](https://github.com/nbiish/agentsstandard-dot-com/issues/new?template=provider-update.md)
+
+### Design Principle
+
+`~/.agents/providers.txt` is a **base standard** that agents CAN read, not a replacement for agent-specific provider configuration. Tool makers should:
+
+1. Read `~/.agents/providers.txt` as a base configuration
+2. Maintain their own per-tool config files for provider/model overrides
+3. Fall back to providers.txt for unknown providers
+4. Contribute provider updates back to the standard
 
 ---
 

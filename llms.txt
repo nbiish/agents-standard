@@ -222,6 +222,23 @@ Per-agent MCP project config locations and formats:
 
 Full structured data: https://agentsstandard.com/providers.json
 
+## providers.txt Standard
+
+**Location:** `~/.agents/providers.txt`
+**Example:** [`providers.example.txt`](providers.example.txt) — full format template with schema documentation
+
+providers.txt is a human-readable TSV reference document defining LLM providers and models that any coding agent can read. It lives alongside AGENTS.md and mcp-settings.json in `~/.agents/`.
+
+**Sections:**
+- Provider Summary Table — namespace, endpoint, env var, default agent
+- Master Model Specification — model ID, display name, context/output tokens, capabilities (tools, vision, cache, reasoning)
+- Provider Details — per-provider docs with notes on caching, reasoning, multimodal behavior
+- Cross-Tool Configuration Matrix — which agents support which providers
+
+**Design principle:** providers.txt is a base standard that agents CAN read, not a replacement for agent-specific provider configuration. Tool makers should keep their own per-tool configs for provider/model overrides.
+
+**Security:** API keys are never stored in this file. Use ${ENV_VAR} references or PQC-encrypted key bundles.
+
 Key endpoint note: Per Augment docs, the Augment Code API is full Anthropic Messages API compatible at `https://api.augmentcode.com/anthropic/v1` using `AUGMENT_API_KEY`.
 
 ## Standard Directory Layout
