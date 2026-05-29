@@ -308,5 +308,39 @@ Plain Markdown. No YAML frontmatter. No schema.
 - **Agent Skills** (SKILL.md) = what the agent can *do* (https://agentskills.io)
 - **Agents Standard** (AGENTS.md) = how the agent should *behave*
 - **mcp-settings.json** = what external tools are available
+- **providers.txt** = which LLM providers/models to use
 
-Both use the `.agents/` directory. They complement each other.
+All four live in `~/.agents/`. They complement each other.
+
+## Changelog
+
+### v2.0.0-alpha (May 29, 2026)
+
+**providers.txt Standard:**
+- Integrated `~/.agents/providers.txt` as the standardized LLM provider config reference
+- Created `providers.example.txt` — full format template with embedded schema documentation
+- Updated `providers.json` to v2.0.0 with `providers_txt` reference
+- Added providers.txt entry schema and contribution guide to `CONTRIBUTING.md`
+- Added provider-update GitHub issue template
+- Documented the design principle: providers.txt is a base standard that agents CAN read, not a replacement for agent-specific provider configuration. Tool makers keep their own per-tool configs for overrides.
+
+**MCP Security (PQC Key Management):**
+- Security-first catalog — all MCP API keys use `${ENV_VAR}` references, zero raw keys on disk
+- `substituteEnvVars()` now scans `args` for inline API keys (closes context7 raw-key gap)
+- Created `mcp-settings.example.json` — public security-first catalog template
+- PQC key management via ML-KEM-768 (FIPS 203) + AES-256-GCM
+- Keys stored encrypted in `~/.config/pqc-secrets/secrets.bundle.json`, private key in macOS Keychain
+- Encrypted-at-rest key flow: encrypt → load → ${VAR} refs → pull
+
+**CLI v2.0.0-alpha:**
+- 30-agent registry, modular command architecture
+- Rules TUI with interactive navigation (↑↓/space/enter/q/d/g)
+- MCP catalog CRUD, project config management, health checks
+- Zero-dependency — Node.js >=16 built-ins only
+- 33 passing tests
+
+**Documentation:**
+- README.md with v2.0.0 overview and security workflow
+- CONTRIBUTING.md with open-code contribution protocol for humans AND AI agents
+- GitHub issue templates: agent-update, new-agent, spec-change, mcp-server, bug, provider-update
+- PR template with verification checklist
