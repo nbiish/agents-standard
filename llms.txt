@@ -27,34 +27,114 @@ Most specific rules win (folder > active > project base > global). Each layer ex
 
 ## Agent Coverage
 
-30 agents tracked with verified config file paths, MCP config locations, and docs URLs.
+23 agents tracked in the CLI with verified config file paths.
+30 agents tracked overall with verified config file paths, MCP config locations, and docs URLs.
 Full structured data: https://agentsstandard.com/agents.json
 
 ## Agents with Native AGENTS.md Support
 
 - Pi — reads ~/.agents/AGENTS.md and .agents/AGENTS.md
+- CodeWhale — reads ~/.agents/AGENTS.md natively and AGENTS.md at project root
 - Kilo Code — reads AGENTS.md at project root
 - OpenCode — reads AGENTS.md at project root
 - Deep Agents (dcode) — reads .deepagents/AGENTS.md and AGENTS.md
-- Zed — reads AGENTS.md at project root
+- Zed — reads AGENTS.md at project root and ~/.config/zed/AGENTS.md globally
 
 All other agents can symlink ~/.agents/AGENTS.md into their config location.
+
+## CLI Tool
+
+**Location**: `cli/index.js` — Zero dependencies, Node.js >=16 built-ins only.
+
+**Install**:
+```
+npm install -g agents-standard
+```
+Or run directly: `node cli/index.js`
+
+### Commands
+
+| Command | Flag | Description |
+|---------|------|-------------|
+| Interactive TUI | _(default)_ | Checkbox-based TUI to toggle symlinks per agent |
+| List status | `--list` / `-l` | Print all agents with current link status |
+| Link all | `--link-all` / `-a` | Non-interactive: symlink all supported agents |
+| Set depth | `--depth N` | Set AGENTS_DEPTH (1–10), prints to stdout |
+| Version | `--version` / `-v` | Print CLI version |
+| Help | `--help` / `-h` | Show usage and key bindings |
+
+### Interactive TUI
+
+Navigate a list of 23 agents, toggle symlink creation on/off with space, then submit all changes at once.
+
+**Key Bindings**:
+
+| Key | Action |
+|-----|--------|
+| `↑` `↓` / `j` `k` | Navigate agent list |
+| `Space` | Toggle symlink on/off for selected agent |
+| `Enter` | Submit changes (when cursor is on "Submit changes" bar) |
+| `d` | Cycle AGENTS_DEPTH (1–5) |
+| `g` | Change global AGENTS.md path |
+| `q` | Quit |
+| `Ctrl+C` | Quit |
+
+**What Submit does**:
+- Creates symlinks from `~/.agents/AGENTS.md` to each toggled agent's global config path
+- Removes symlinks for agents toggled off (only if they point to our global file)
+- Creates `~/.agents/AGENTS.md` with a starter template if it doesn't exist
+- Writes `export AGENTS_DEPTH=N` to `~/.zshenv`, `~/.bashrc`, and `~/.profile`
+
+### Agent List (CLI)
+
+| Agent | Global Path | Type |
+|-------|------------|------|
+| Pi | — | native (reads ~/.agents/AGENTS.md) |
+| CodeWhale | — | native (reads ~/.agents/AGENTS.md) |
+| Claude Code | `~/.claude/CLAUDE.md` | symlink |
+| Agy / Gemini CLI | `~/.gemini/GEMINI.md` | symlink |
+| OpenAI Codex | `~/.codex/instructions.md` | symlink |
+| Cursor | `~/.cursor/rules/agents-standard` | symlink |
+| Windsurf | `~/.codeium/windsurf/rules` | symlink |
+| Cline | `~/.cline/cline_rules` | symlink |
+| Roo Code | `~/.roo/rules/agents-standard` | symlink |
+| Kiro | `~/.kiro/kiro.md` | symlink |
+| Augment | `~/.augment/guidelines` | symlink |
+| Goose | `~/.config/goose/goosehints` | symlink |
+| Junie | `~/.junie/guidelines.md` | symlink |
+| Trae | `~/.trae/rules/agents-standard` | symlink |
+| Crush | `~/.config/crush/crush.md` | symlink |
+| Hermes Agent | `~/.hermes/SOUL.md` | symlink |
+| MiniCC | `~/.minicc/AGENTS.md` | symlink |
+| Deep Agents (dcode) | `~/.deepagents/AGENTS.md` | symlink |
+| Zed | `~/.config/zed/AGENTS.md` | symlink |
+| Aider | `~/.aider.conf.yml` | YAML format — manual setup |
+| Continue | `~/.continue/config.json` | JSON format — manual setup |
+| GitHub Copilot | — | project-only, no global file |
+| Warp | — | settings UI, no global file |
+
+### Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `AGENTS_DEPTH` | Controls how many directory tiers load AGENTS.md (1=global only, 3=default) | `3` |
+| `AGENTS_PATH` | Override the global AGENTS.md path | `~/.agents/AGENTS.md` |
 
 ## Standard Directory Layout
 
 ```
 # Global ~/.agents/ (behavior + tooling)
 ~/.agents/
-├── AGENTS.md              ← Behavior rules (global base, loaded first)
-├── mcp-settings.json      ← MCP server configs (universal)
-└── skills/                ← Agent Skills
+├── AGENTS.md              <- Behavior rules (global base, loaded first)
+├── mcp-settings.json      <- MCP server configs (universal)
+└── skills/                <- Agent Skills
     └── **/SKILL.md
 
 # Project .agents/ (tooling + project base rules)
 {project}/.agents/
-├── AGENTS.md              ← Project base rules (committed rules for tech stack, deployment)
-├── mcp-settings.json      ← Project-specific MCP servers
-└── skills/                ← Project-specific agent skills
+├── AGENTS.md              <- Project base rules (committed rules for tech stack, deployment)
+├── mcp-settings.json      <- Project-specific MCP servers
+└── skills/                <- Project-specific agent skills
     └── **/SKILL.md
 ```
 
@@ -69,3 +149,20 @@ Plain Markdown. No YAML frontmatter. No schema.
 - Site repo: https://github.com/nbiish/agentsstandard-dot-com
 - Structured data: https://agentsstandard.com/agents.json
 - Setup script: https://raw.githubusercontent.com/nbiish/agents-standard/main/setup.sh
+
+## Development Status & Context
+
+- **Recent Updates (v1.4.0)**:
+  - CLI TUI now features space-bar toggling and a "Submit changes" confirmation bar at the bottom.
+  - Added **Zed** (`~/.config/zed/AGENTS.md`) and **CodeWhale** (`~/.agents/AGENTS.md`, native) to the CLI agent list.
+  - Fixed keypress event handling (`readline.emitKeypressEvents`) so interactive input works correctly.
+  - Added TTY detection — non-TTY environments get a helpful error instead of a crash.
+  - Added `--version` / `-v` flag.
+  - `q` key now properly exits the TUI (previously set a flag that was never checked).
+  - Terminal row count falls back to 24 when `process.stdout.rows` is undefined.
+  - Version bumped to 1.4.0 across `package.json` and TUI header.
+  - Fully synchronized all specification tables, JSON files, and CLI sources between `agentsstandard-dot-com` (website/docs repo) and `agents-standard` (spec/CLI repo).
+- **Current Goals & Iterations**:
+  - Track downstream adoption of standard directories and global configurations.
+  - Keep agent configuration mappings updated in `agents.json` as new agents add support.
+  - Maintain the automated CLI link system matching the latest `agents.json` metadata.
