@@ -98,6 +98,15 @@ The CLI manages a global MCP catalog (`~/.agents/mcp-settings.json`) and pulls s
 
 **Secret safety**: When pulling, raw API keys are automatically substituted with `${ENV_VAR}` references. `.mcp.json` is safe to commit. `mcp-settings.json` stays private.
 
+**Security-first pattern (PQC)**: For zero-plaintext-on-disk security, manage API keys via PQC encryption:
+1. Encrypt keys into `~/.config/pqc-secrets/secrets.bundle.json` (ML-KEM-768 + AES-256-GCM)
+2. Load at shell startup via `secrets-load` — keys decrypt into env vars in-memory
+3. Catalog entries use `${ENV_VAR}` refs — no raw keys anywhere
+4. `mcp pull` propagates env var refs into `.mcp.json`
+5. Agent reads env var at runtime — key never touches disk
+
+See `mcp-settings.example.json` for the complete security-first template.
+
 **Naming convention**:
 - `mcp-settings.json` = Global catalog with API keys (private, do NOT commit)
 - `.mcp.json` = Project live config with `${ENV_VAR}` refs (safe to commit)

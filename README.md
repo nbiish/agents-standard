@@ -100,7 +100,26 @@ Flags (all commands):
 .agents mcp find search
 ```
 
-**Secret safety**: When you `pull` a server from the catalog (which stores your API keys), the CLI replaces raw keys with `${ENV_VAR}` references. Your project's `.mcp.json` is safe to commit. The catalog at `~/.agents/mcp-settings.json` stays private.
+**Secret safety**: When you `pull` a server from the catalog, the CLI replaces raw API keys with `${ENV_VAR}` references. Your project's `.mcp.json` is safe to commit — keys never touch disk in project directories.
+
+**Security-first setup**: For maximum security, manage API keys with PQC encryption at rest:
+
+1. **Encrypt keys** via ML-KEM-768 + AES-256-GCM into a local bundle (`~/.config/pqc-secrets/secrets.bundle.json`)
+2. **Load at shell startup** via `secrets-load` — keys decrypt into env vars in-memory, never written to disk
+3. **Use `${ENV_VAR}` refs** in your catalog — no raw keys in any config file
+4. **Pull into projects** with `.agents mcp pull` — env var refs propagate safely
+
+```bash
+# Catalog entry uses env var refs (no raw keys)
+"brave-search": {
+  "env": { "BRAVE_API_KEY": "${BRAVE_API_KEY}" }
+}
+
+# PQC bundle decrypts key at shell startup → export BRAVE_API_KEY
+# .mcp.json copies the reference → agent reads from env at runtime
+```
+
+See [`mcp-settings.example.json`](mcp-settings.example.json) for the complete security-first catalog template with PQC integration guide.
 
 ### Project Bootstrap
 

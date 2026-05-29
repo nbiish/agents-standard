@@ -45,8 +45,21 @@ function substituteEnvVars(serverDef) {
       : parseInt(serverDef.timeout, 10);
   }
 
-  // Copy args as-is (they don't usually contain secrets)
-  if (serverDef.args) sanitized.args = [...serverDef.args];
+  // Scan args for inline API keys (e.g., --api-key ctx7sk-...) and substitute
+  if (serverDef.args) {
+    sanitized.args = serverDef.args.map(arg => {
+      if (typeof arg !== 'string') return arg;
+      // Check if this arg looks like a raw API key via pattern matching
+      for (const { pattern, envVar } of ENV_VAR_PATTERNS) {
+        if (pattern.test(arg)) return `\${${envVar}}`;
+      }
+      // Also check if value is long and looks like a secret token
+      if (arg.length > 20 && /^[A-Za-z0-9_-]+$/.test(arg) && !arg.startsWith('-')) {
+        return `\${DETECTED_API_KEY}`;
+      }
+      return arg;
+    });
+  }
 
   // Substitute env vars: replace raw key values with ${ENV_VAR} references
   if (serverDef.env) {

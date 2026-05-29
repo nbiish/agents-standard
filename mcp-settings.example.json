@@ -1,0 +1,87 @@
+{
+  "$schema": "https://agentsstandard.com/schemas/mcp-catalog.json",
+  "version": "2.0.0",
+  "_comment": "This is the MCP server catalog template. Place at ~/.agents/mcp-settings.json. NEVER commit real API keys — use ${ENV_VAR} references. Manage keys via PQC secrets (see docs below).",
+  "catalog": {
+    "tavily-search": {
+      "command": "npx",
+      "args": ["-y", "tavily-mcp"],
+      "env": {
+        "TAVILY_API_KEY": "${TAVILY_API_KEY}"
+      },
+      "description": "Web search and research via Tavily API",
+      "category": "search",
+      "disabled": false
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@brave/brave-search-mcp-server"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      },
+      "description": "Web search, image search, news, and LLM context via Brave Search API",
+      "category": "search",
+      "disabled": false
+    },
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      },
+      "description": "Web scraping, crawling, search, and agent research via Firecrawl",
+      "category": "browser",
+      "disabled": false
+    },
+    "browsermcp": {
+      "command": "npx",
+      "args": ["@browsermcp/mcp@latest"],
+      "description": "Browser automation — navigate, click, type, screenshot",
+      "category": "browser",
+      "disabled": false
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["chrome-devtools-mcp@latest", "--autoConnect", "--channel=beta"],
+      "description": "Chrome DevTools — performance traces, network inspection, Lighthouse audits",
+      "category": "browser",
+      "disabled": false
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
+      },
+      "description": "Up-to-date documentation and code examples for any library or framework",
+      "category": "docs",
+      "disabled": false
+    },
+    "gitnexus": {
+      "command": "npx",
+      "args": ["-y", "gitnexus@latest", "mcp"],
+      "description": "Code knowledge graph — query, impact analysis, Cypher queries, rename",
+      "category": "code",
+      "disabled": false
+    }
+  },
+  "_security_guide": {
+    "title": "Security-First API Key Management with PQC",
+    "principle": "Zero plaintext keys on disk. All API keys encrypted at rest via ML-KEM-768 + AES-256-GCM. Keys loaded in-memory at shell startup, never written to project configs.",
+    "workflow": [
+      "1. Generate PQC keypair: pqc-secrets keygen",
+      "2. Pack API keys: pqc-secrets pack < keys.txt → ~/.config/pqc-secrets/secrets.bundle.json",
+      "3. Load at shell startup: secrets-load (evaluated by .zshrc / .bashrc)",
+      "4. Catalog uses ${ENV_VAR} refs — no raw keys anywhere",
+      "5. Pull into project: .agents mcp pull brave-search → .mcp.json has ${BRAVE_API_KEY}",
+      "6. Agent reads env var at runtime — key never touches disk"
+    ],
+    "crypto_standards": {
+      "key_encapsulation": "ML-KEM-768 (FIPS 203)",
+      "symmetric_encryption": "AES-256-GCM",
+      "digital_signatures": "ML-DSA-65 (FIPS 204)",
+      "forbidden": ["RSA", "ECDH", "ECDSA", "Ed25519", "AES-CBC", "SHA-1", "MD5"]
+    },
+    "env_var_flow": "~/.config/pqc-secrets/secrets.bundle.json → secrets-load (decrypt in-memory) → export BRAVE_API_KEY=BSAGXd... → ${BRAVE_API_KEY} in catalog → .mcp.json with ${BRAVE_API_KEY} → agent reads from env"
+  }
+}
