@@ -335,6 +335,12 @@ All four live in `~/.agents/`. They complement each other.
 - Added provider-update GitHub issue template
 - Documented the design principle: providers.txt is a base standard that agents CAN read, not a replacement for agent-specific provider configuration. Tool makers keep their own per-tool configs for overrides.
 
+**MCP Config Convention:**
+- Documented cross-tool MCP config analysis: `.mcp.json` is the most common project-level filename
+- Clarified two-file architecture: `mcp-settings.json` (catalog) vs `.mcp.json` (live config)
+- `mcp-settings.json` deliberately named differently — signals "has raw keys, don't point agents at it"
+- Near-universal root key is `"mcpServers"` (VS Code uses `"servers"`, Goose uses `"extensions"`)
+
 **MCP Security (PQC Key Management):**
 - Security-first catalog — all MCP API keys use `${ENV_VAR}` references, zero raw keys on disk
 - `substituteEnvVars()` now scans `args` for inline API keys (closes context7 raw-key gap)
