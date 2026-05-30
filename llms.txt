@@ -107,11 +107,22 @@ The CLI manages a global MCP catalog (`~/.agents/mcp-settings.json`) and pulls s
 
 See `mcp-settings.example.json` for the complete security-first template.
 
-**Naming convention**:
-- `mcp-settings.json` = Global catalog with API keys (private, do NOT commit)
-- `.mcp.json` = Project live config with `${ENV_VAR}` refs (safe to commit)
+**Two-file architecture**:
 
-Claude Code, Cursor, VS Code, Kiro, Junie, Trae, and dcode all use `.mcp.json` for project MCP configs. Adopted as the standard project-level convention.
+| File | Purpose | Who reads it | Commit? |
+|------|---------|--------------|---------|
+| `mcp-settings.json` | Global CATALOG (definitions + keys) | `.agents mcp pull` | No (private) |
+| `.mcp.json` | Project LIVE config (${ENV_VAR} refs) | All agents | Yes (safe) |
+
+The catalog stores raw keys and is never pointed at an agent directly. `.mcp.json` uses env var references and is safe to commit. `.agents mcp pull` bridges between them.
+
+**MCP config convention across tools**:
+
+`.mcp.json` is the most common project-level filename, used by Claude Code, GitHub Copilot, Aider directly at the project root. Cursor uses `.cursor/mcp.json`, Roo Code uses `.roo/mcp.json`, Cline uses `.cline/mcp.json`, VS Code uses `.vscode/mcp.json` — all `mcp.json` inside tool-specific subdirectories. Qwen Code uses `.qwen/settings.json`, Goose uses `config.yaml` with `extensions:` key.
+
+The near-universal root key is `"mcpServers"` (Claude Code, Cursor, Windsurf, Qwen Code, Copilot, Cline, Roo Code). VS Code is the exception, using `"servers"`. Goose uses `"extensions"` with YAML.
+
+`mcp-settings.json` is deliberately NOT named `.mcp.json` — it signals "this has raw keys, don't point an agent at it." No tool reads `mcp-settings.json` as its MCP config. The two names serve different roles in the same pipeline.
 
 ### Skills Management
 
